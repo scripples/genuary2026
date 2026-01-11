@@ -20,14 +20,28 @@ fn main() {
             ..Default::default()
         }))
         .add_systems(Startup, setup)
-        // .add_systems(FixedUpdate, update)
+        .add_systems(FixedUpdate, update)
         .run();
 }
 
 #[derive(Component)]
 struct FibData {
-    fib: f32,
-    left: bool,
+    base: f32,
+    hue: f32,
+}
+
+fn update(
+    mut commands: Commands,
+    mut query: Query<(&FibData, &mut MeshMaterial2d<ColorMaterial>)>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    time: Res<Time>,
+) {
+    for (fib, mat) in query.iter_mut() {
+        let mat_handle = mat.0.clone();
+        let mat = materials.get_mut(&mat_handle).unwrap();
+        let hue = ((time.elapsed_secs() * fib.base * 10.) + fib.hue) % 360.;
+        mat.color.set_hue(hue);
+    }
 }
 
 fn setup(
@@ -39,7 +53,6 @@ fn setup(
 ) {
     //let img = asset_server.load("./textures/cat.jpg");
 
-    // Camera
     commands.spawn((
         Camera2d,
         // Transform ensures the camera space is 0,0 at bottom left corner
@@ -74,8 +87,6 @@ fn setup(
                 1. - norm_height * i as f32
             };
 
-            println!("HUE: {}", hue);
-
             let color = Color::hsv(hue, 1., val);
 
             commands.spawn((
@@ -89,7 +100,7 @@ fn setup(
                     color,
                     ..Default::default()
                 })),
-                FibData { fib, left: true },
+                FibData { base: fib, hue },
             ));
         }
 
